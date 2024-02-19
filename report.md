@@ -4,7 +4,9 @@ ABG is a talented group of engineers focused on growing the web3 ecosystem. Lear
 
 # Introduction
 
-An ERC4626 compliant vault with the GoGoPool protocol token GGP as an underlying asset. The funds are utilized in a strategy staking GGP tokens on behalf of trusted node operators and receiving the rewards generated as yield.
+The following is a security review of the GGP Vault contract.
+
+The GGP Vault contract is an [ERC4626](https://eips.ethereum.org/EIPS/eip-4626) compliant vault with the [GoGoPool protocol](https://www.gogopool.com/) token, [GGP](https://docs.gogopool.com/design/how-minipools-work/ggp-rewards), as an underlying asset. The funds are utilized in a strategy staking GGP tokens on behalf of trusted node operators and receiving the rewards generated as yield.
 
 Upon deposit of GGP, a number of receipt tokens of xGGP will be mint. These tokens represent the share of assets held within the contract (referred to henceforth as the "vault"). The vault will use the GGP tokens to generate yield. The strategy for generating yield involves staking the GGP tokens on behalf of trusted node operators participating in the GoGoPool protocol. The GoGoPool protocol provides rewards for staking and those will be accrued by the vault, and increase the value of the xGGP tokens. The xGGP tokens can be redeemed for the underlying GGP tokens.
 
@@ -12,7 +14,7 @@ _Disclaimer:_ This security review does not guarantee against a hack. It is a sn
 
 # Architecture
 
-The vault inherits much of its base functionality from trusted and audited contracts from the OpenZeppelin library. However, the vault has been modified to incorporate features for added security and ability to interact with the GoGoPool protocol. The vault has been designed to be upgradable, allowing for future improvements and bug fixes.
+The vault inherits much of its base functionality from trusted and audited contracts from the [OpenZeppelin contract library](https://www.openzeppelin.com/contracts). However, the vault has been modified to incorporate features for added security and ability to interact with the GoGoPool protocol. The vault has been designed to be upgradable, allowing for future improvements and bug fixes.
 
 The areas of focus therefore are:
 
@@ -32,6 +34,7 @@ The following is steps I took to evaluate the change.
   - Unit Tests
   - Integration Tests
 - Review Deployment Strategy
+- Review Operation Strategy
 - Run Slither
 - Run ERC-4626 Test Suite
 
@@ -47,14 +50,21 @@ No findings
 
 ## Medium Risk
 
-1 finding
+No findings
+
+## Low Risk
+
+2 findings
 
 ### Unprotected upgradeable contract
 
 **Severity:** Medium
+
 **Context:** [`GGPVault.sol`](https://github.com/SeaFi-Labs/GGP-Vault/commit/93b1f825014c08117194204a292ec440dfd52f1b#diff-9dc028acb86f9a08936b7224720744d400aef5016bf130f158c6882dda407f33)
+
 **Description:**
 While the initializer function is protected by the `initializer` modifier, preventing the re-initialization of the contract, the implementation contract has not been initialized. This means that the contract can be initialized by anyone, potentially causing unexpected behavior.
+
 **Recommendation:**
 The implementation contract should be initialized in the constructor of the proxy contract. This will prevent the contract from being initialized by anyone other than the deployer.
 
@@ -67,16 +77,14 @@ constructor(){
 **Resolution:**
 The recommended code was added to the contract in commit [9ebc70d](https://github.com/SeaFi-Labs/GGP-Vault/commit/9ebc70dcc9716e10bdfeceb0d102fc13a7eae526#diff-c25a2ac5ee4834d11f52576c9dff4f8a8f85ec3b890b020cd43b13ed8f3f720dR50).
 
-## Low Risk
-
-1 finding
+### Lack of input validation
 
 **Severity:** Low
 
 **Context:** [`GGPVault.sol#L81`](https://github.com/SeaFi-Labs/GGP-Vault/commit/93b1f825014c08117194204a292ec440dfd52f1b?diff=unified&w=0#diff-9dc028acb86f9a08936b7224720744d400aef5016bf130f158c6882dda407f33R81)
 
 **Description:**
-The `setAssetCap` function does not validate its input beyond the access control checks. While not directly a vulnerability, improper setting of this value could disrupt the contract's economics or functionality.
+The `setAssetCap` (and `setTargetAPR` in a future version) functions do not validate input beyond the access control checks. While not directly a vulnerability, improper setting of these values could disrupt the contract's economics or functionality.
 
 **Recommendation:**
 Add input validation to the `setGGPCap` and `setTargetAPR` functions to ensure that the inputs are within the expected range.
@@ -134,7 +142,7 @@ This contract interacts with the GoGoPool protocol. The GoGoPool protocol is als
 
 ### GGP Token
 
-During normal operations of the vault, the transfers and approvals to the GGP token are done in a safe manner. The GGP token has been audited and follows the ERC20 standard.
+During normal operations of the vault, the transfers and approvals to the GGP token are done in a safe manner. The GGP token has been [audited](https://docs.gogopool.com/security/audits) and follows the ERC20 standard.
 
 ### Staking Contract
 
@@ -150,10 +158,16 @@ The owner of the contract as well as the trusted node operators have a large amo
 
 Given the power of the elevated roles, the setting of new node operators or changing the owner must be done with caution.
 
-### Other Misc
+## Other Misc
 
-The Solidity version ^0.8.20 used in the vault is potentially too new to be trusted. Consider deploying with 0.8.18.
+The Solidity version ^0.8.20 used in the vault is potentially too new to be fully trusted.
+
+Test coverage is complete.
+
+Code is well documented with NatSpec and the documentation site.
 
 ## Conclusion
 
-The only findings were of medium and informational severity. The medium severity finding was a potential vulnerability in the upgradeable contract. The informational severity finding was a shadowed variable. The contract has been reviewed and tested thoroughly, and the findings have been addressed. There are additional risks to consider, such as the GGP price fluctuations, the upgradability of the contracts, and the centralization risk. I believe the answer to the questions I set out to answer are yes. The contract adheres to the ERC-4626 standard, the security features work as intended, and the changes to the OpenZeppelin contracts are secure.
+The only findings were of low and informational severity. The low severity findings were a potential griefing in the implementation contract and un-bound variable setting. The informational severity finding was a shadowed variable. The contract has been reviewed and tested thoroughly, and the findings have been addressed. There are additional risks to consider, such as the GGP price fluctuations, the upgradability of the contracts, and the centralization risk.
+
+I believe the answer to the questions I set out to answer are yes. The contract adheres to the ERC-4626 standard, the security features work as intended, and the changes to the OpenZeppelin contracts are secure.
