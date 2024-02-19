@@ -89,6 +89,9 @@ The `setAssetCap` (and `setTargetAPR` in a future version) functions do not vali
 **Recommendation:**
 Add input validation to the `setGGPCap` and `setTargetAPR` functions to ensure that the inputs are within the expected range.
 
+**Resolutio:**
+The SeaFi team has acknowledged the finding and will be careful with the setting of these values, aiming to add this feature in the future version of the contract.
+
 ## Informational
 
 1 finding
@@ -113,8 +116,8 @@ function maxRedeem(address owner) public view override returns (uint256) {
 Rename the variable to something that does not shadow the `owner` variable from `OwnableUpgradeable`. I recommend `shareHolder` as it is more descriptive of the variable's purpose.
 
 ```diff
-- function maxRedeem(address owner) public view override returns (uint256)
-+ function maxRedeem(address shareHolder) public view override returns (uint256)
+- function maxRedeem(address owner)
++ function maxRedeem(address shareHolder)
 ```
 
 **Resolution**
@@ -146,7 +149,9 @@ During normal operations of the vault, the transfers and approvals to the GGP to
 
 ### Staking Contract
 
-The vault interacts with the GoGoPool protocol. In `GGPVault.stakeAndDistributeRewards`, the external function call `stakingContract.stakeGGPOnBehalfOf`, calls the GoGoPool protocol. This is a trusted contract without a risk of re-entry. However, as mentioned, the GoGoPool protocol is upgradable. This introduces a risk of the contract changing at any time by the owner. Due to this, the contracts that are being interacted with: the storage and the staking contracts, should be monitored by the team for changes.
+The vault interacts with the GoGoPool protocol.
+
+In `GGPVault.stakeAndDistributeRewards`, the external function call `stakingContract.stakeGGPOnBehalfOf`, calls the GoGoPool protocol. This is a trusted contract without a risk of re-entry. However, as mentioned, the GoGoPool protocol is upgradable. This introduces a risk of the contract changing at any time by the owner. Due to this, the contracts that are being interacted with: the storage and the staking contracts, should be monitored by the team for changes.
 
 ## Centralization Risk
 
@@ -164,10 +169,10 @@ The Solidity version ^0.8.20 used in the vault is potentially too new to be full
 
 Test coverage is complete.
 
-Code is well documented with NatSpec and the documentation site.
+Code is well documented with NatSpec and the documentation website.
 
 ## Conclusion
 
-The only findings were of low and informational severity. The low severity findings were a potential griefing in the implementation contract and un-bound variable setting. The informational severity finding was a shadowed variable. The contract has been reviewed and tested thoroughly, and the findings have been addressed. There are additional risks to consider, such as the GGP price fluctuations, the upgradability of the contracts, and the centralization risk.
+The findings were of low and informational severity. The low severity findings were a potential griefing in the implementation contract and un-bound variable setting. The informational severity finding was a shadowed variable. There are additional risks to consider, such as the GGP price fluctuations, the upgradability of the contracts, and the centralization risk.
 
-I believe the answer to the questions I set out to answer are yes. The contract adheres to the ERC-4626 standard, the security features work as intended, and the changes to the OpenZeppelin contracts are secure.
+I believe the answer to the questions set out to answer are yes: The contract adheres to the ERC-4626 standard, the security features work as intended, and the changes to the OpenZeppelin contracts are secure.
